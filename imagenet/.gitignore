@@ -20,3 +20,5 @@ __pycache__/
 
 output/*.txt
 !output/example_dpcore.txt
+
+temp/
