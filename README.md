@@ -1,7 +1,7 @@
 # DPCore
-[Dynamic Domains, Dynamic Solutions: DPCore for Continual Test-Time Adaptation](https://arxiv.org/pdf/2406.10737)
+[DPCore: Dynamic Prompt Coreset for Continual Test-Time Adaptation](https://arxiv.org/pdf/2406.10737)
 
-Yunbei Zhang, Akshay Mehra, Jihun Hamm
+Yunbei Zhang, Akshay Mehra, Shuaicheng Niu, Jihun Hamm
 
 ## Requirements
 ```bash
@@ -22,8 +22,8 @@ sh ./bash/dpcore_vit.sh
 Please cite our work if you find it useful.
 ```bibtex
 @article{zhang2024dynamic,
-  title={Dynamic Domains, Dynamic Solutions: DPCore for Continual Test-Time Adaptation},
-  author={Zhang, Yunbei and Mehra, Akshay and Hamm, Jihun},
+  title={DPCore: Dynamic Prompt Coreset for Continual Test-Time Adaptation},
+  author={Zhang, Yunbei and Mehra, Akshay and Niu, Shuaicheng and Hamm, Jihun},
   journal={arXiv preprint arXiv:2406.10737},
   year={2024}
 }

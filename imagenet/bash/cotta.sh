@@ -1,0 +1,1 @@
+python imagenetc.py --cfg ./cfgs/cotta.yaml  --data_dir $DATA_DIR

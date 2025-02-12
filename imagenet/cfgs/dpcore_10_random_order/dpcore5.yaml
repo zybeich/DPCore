@@ -1,0 +1,35 @@
+CORRUPTION:
+  DATASET: imagenet
+  SEVERITY:
+  - 5
+  TYPE:
+  - motion_blur
+  - snow
+  - fog
+  - shot_noise
+  - defocus_blur
+  - contrast
+  - zoom_blur
+  - brightness
+  - frost
+  - elastic_transform
+  - glass_blur
+  - gaussian_noise
+  - pixelate
+  - jpeg_compression
+  - impulse_noise
+MODEL:
+  ADAPTATION: dpcore
+  ARCH: Standard_VITB
+OPTIM:
+  BETA: 0.9
+  LR: 0.1
+  METHOD: AdamW
+  STEPS: 50
+  WD: 0.01
+  PROMPT_NUM: 8
+  THR_RHO: 0.8
+  EMA_ALPHA: 0.999
+  TEMP_TAU: 3.0
+TEST:
+  BATCH_SIZE: 64

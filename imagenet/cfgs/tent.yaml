@@ -19,16 +19,13 @@ CORRUPTION:
     - pixelate
     - jpeg_compression
 MODEL:
-  ADAPTATION: vida
+  ADAPTATION: tent
   ARCH: Standard_VITB
 OPTIM:
   BETA: 0.9
-  LR: 5e-07
-  ViDALR: 2e-07
+  LR: 1e-3
   METHOD: SGD
   STEPS: 1
   WD: 0.0
-  MT_ViDA: 0.8
-  MT: 0.999
 TEST:
-  BATCH_SIZE: 50
+  BATCH_SIZE: 64

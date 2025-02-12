@@ -134,6 +134,16 @@ _C.TEST.vida_rank2 = 128
 _C.OPTIM.MT_ViDA = 0.999
 _C.OPTIM.MT = 0.999
 
+# DPCore parameters
+_C.OPTIM.PROMPT_NUM = 8
+_C.OPTIM.EMA_ALPHA = 0.999
+_C.OPTIM.TEMP_TAU = 3.0
+_C.OPTIM.THR_RHO = 0.8
+
+# CDC setting configurations
+_C.CDC_PATH = ''
+_C.SRC_NUM_SAMPLES = 300
+
 # # Config destination (in SAVE_DIR)
 # _C.CFG_DEST = "cfg.yaml"
 

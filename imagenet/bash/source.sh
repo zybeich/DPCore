@@ -1,0 +1,1 @@
+python imagenetc.py --cfg ./cfgs/source.yaml

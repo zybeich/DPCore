@@ -218,6 +218,7 @@ def clean_accuracy(model: nn.Module,
             output = output[0] if isinstance(output, tuple) else output
             acc += (output.max(1)[1] == y_curr).float().sum()
 
+
     return acc.item() / x.shape[0]
 
 

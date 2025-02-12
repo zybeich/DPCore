@@ -19,13 +19,17 @@ CORRUPTION:
     - pixelate
     - jpeg_compression
 MODEL:
-  ADAPTATION: tent
+  ADAPTATION: dpcore
   ARCH: Standard_VITB
 OPTIM:
   BETA: 0.9
-  LR: 1e-4
-  METHOD: SGD
-  STEPS: 1
-  WD: 0.0
+  LR: 0.01
+  METHOD: AdamW
+  STEPS: 50
+  WD: 0.01
+  PROMPT_NUM: 8
+  THR_RHO: 0.8
+  EMA_ALPHA: 0.999
+  TEMP_TAU: 3.0
 TEST:
   BATCH_SIZE: 64

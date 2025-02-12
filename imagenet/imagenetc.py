@@ -11,15 +11,11 @@ from robustbench.utils import clean_accuracy as accuracy
 import tent
 import cotta
 import vida
+import dpcore
 
 from conf import cfg, load_cfg_fom_args
 
-from vpt import PromptViT
-from dpcore import DPCore
-
-
 logger = logging.getLogger(__name__)
-
 
 
 def evaluate(description):
@@ -45,6 +41,7 @@ def evaluate(description):
     # evaluate on each severity and type of corruption in turn
     prev_ct = "x0"
     All_error = []
+    curr_coreset = 0
     for ii, severity in enumerate(cfg.CORRUPTION.SEVERITY):
         for i_x, corruption_type in enumerate(cfg.CORRUPTION.TYPE):
             # reset adaptation for each combination of corruption x severity
@@ -61,6 +58,7 @@ def evaluate(description):
                                            severity, cfg.DATA_DIR, False,
                                            [corruption_type])
             x_test, y_test = x_test.cuda(), y_test.cuda()
+            
             acc = accuracy(model, x_test, y_test, cfg.TEST.BATCH_SIZE)
             err = 1. - acc
             All_error.append(err)
@@ -119,25 +117,24 @@ def setup_optimizer(params):
                    dampening=0,
                    weight_decay=cfg.OPTIM.WD,
                    nesterov=True)
+    elif cfg.OPTIM.METHOD == 'AdamW':
+        return optim.AdamW(params,
+                    lr=cfg.OPTIM.LR,
+                    betas=(cfg.OPTIM.BETA, 0.999),
+                    weight_decay=cfg.OPTIM.WD)
     else:
         raise NotImplementedError
 
 def setup_cotta(model):
-    """Set up tent adaptation.
-
-    Configure the model for training + feature modulation by batch statistics,
-    collect the parameters for feature modulation by gradient optimization,
-    set up the optimizer, and then tent the model.
-    """
     model = cotta.configure_model(model)
     params, param_names = cotta.collect_params(model)
     optimizer = setup_optimizer(params)
     cotta_model = cotta.CoTTA(model, optimizer,
                            steps=cfg.OPTIM.STEPS,
                            episodic=cfg.MODEL.EPISODIC)
-    logger.info(f"model for adaptation: %s", model)
-    logger.info(f"params for adaptation: %s", param_names)
-    logger.info(f"optimizer for adaptation: %s", optimizer)
+    # logger.info(f"model for adaptation: %s", model)
+    # logger.info(f"params for adaptation: %s", param_names)
+    # logger.info(f"optimizer for adaptation: %s", optimizer)
     return cotta_model
 
 def setup_vida(args, model):
@@ -171,10 +168,16 @@ def setup_optimizer_vida(params, params_vida, model_lr, vida_lr):
         raise NotImplementedError
     
 def setup_dpcore(args, model):
-    net = PromptViT(model, 4).cuda()
-    adapt_model = DPCore(net)
-    logger.info(f'{args}')
-    adapt_model.obtain_src_stat()
-    return adapt_model
+    model = dpcore.configure_model(model, cfg)
+    prompt_params = dpcore.collect_params(model)
+    optimizer = setup_optimizer(prompt_params)
+    dpcore_model = dpcore.DPCore(model, optimizer, 
+                                temp_tau=cfg.OPTIM.TEMP_TAU,
+                                thr_rho=cfg.OPTIM.THR_RHO,
+                                ema_alpha=cfg.OPTIM.EMA_ALPHA,
+                                E_OOD=cfg.OPTIM.STEPS)
+    dpcore_model.obtain_src_stat(data_path=args.data_dir, num_samples=cfg.SRC_NUM_SAMPLES)
+    return dpcore_model
+
 if __name__ == '__main__':
     evaluate('"Imagenet-C evaluation.')

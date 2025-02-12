@@ -1,0 +1,1 @@
+python imagenetc.py --cfg ./cfgs/dpcore.yaml  --data_dir $DATA_DIR
