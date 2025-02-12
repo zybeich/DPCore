@@ -14,7 +14,7 @@ conda activate dpcore
 
 ```bash
 cd imagenet
-sh ./bash/dpcore_vit.sh
+sh ./bash/dpcore.sh
 ```
 
 
