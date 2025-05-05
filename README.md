@@ -1,5 +1,5 @@
 # DPCore
-[DPCore: Dynamic Prompt Coreset for Continual Test-Time Adaptation](https://arxiv.org/pdf/2406.10737)
+[[ICML 2025] DPCore: Dynamic Prompt Coreset for Continual Test-Time Adaptation](https://arxiv.org/pdf/2406.10737)
 
 Yunbei Zhang, Akshay Mehra, Shuaicheng Niu, Jihun Hamm
 
