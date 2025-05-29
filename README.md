@@ -48,7 +48,6 @@ conda env create -f environment.yml
 conda activate dpcore
 ```
 
----
 ## 🚀 Running Experiments on ImageNet-C
 Navigate to the imagenet directory and set your data path. Then, you can run the experiments for different settings:
 ```bash
@@ -65,6 +64,7 @@ sh ./bash/dpcore_cdc.sh
 ```
 **Note**: Ensure that `$DATA_DIR` points to the correct location of the ImageNet-C dataset.
 
+---
 ## 📜 Citation
 If you find DPCore useful in your research, please consider citing our paper:
 ```bibtex
