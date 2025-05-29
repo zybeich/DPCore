@@ -1,1 +1,1 @@
-python imagenetc_cdc.py --cfg ./cfgs/dpcore.yaml  --data_dir $data_dir 
+python imagenetc_cdc.py --cfg ./cfgs/dpcore.yaml  --data_dir $DATA_DIR
