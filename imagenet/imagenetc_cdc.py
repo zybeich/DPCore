@@ -1,0 +1,205 @@
+import logging
+
+import torch
+import torch.optim as optim
+import numpy as np
+
+from robustbench.data import load_imagenetc
+from robustbench.model_zoo.enums import ThreatModel
+from robustbench.utils import load_model
+from robustbench.utils import clean_accuracy as accuracy
+
+import tent
+import cotta
+import vida
+import dpcore
+
+from conf import cfg, load_cfg_fom_args
+from utils_cdc import create_cdc_sequence
+
+logger = logging.getLogger(__name__)
+
+
+
+def evaluate(description):
+    args = load_cfg_fom_args(description)
+    # configure model
+    base_model = load_model(cfg.MODEL.ARCH, cfg.CKPT_DIR,
+                       cfg.CORRUPTION.DATASET, ThreatModel.corruptions).cuda()
+    if cfg.MODEL.ADAPTATION == "source":
+        logger.info("test-time adaptation: NONE")
+        model = setup_source(base_model)
+    if cfg.MODEL.ADAPTATION == "tent":
+        logger.info("test-time adaptation: TENT")
+        model = setup_tent(base_model)
+    if cfg.MODEL.ADAPTATION == "cotta":
+        logger.info("test-time adaptation: CoTTA")
+        model = setup_cotta(base_model)
+    if cfg.MODEL.ADAPTATION == "vida":
+        logger.info("test-time adaptation: ViDA")
+        model = setup_vida(args, base_model)
+    if cfg.MODEL.ADAPTATION == "dpcore":
+        logger.info("test-time adaptation: DPCore")
+        model = setup_dpcore(args, base_model)
+    
+    # evaluate on each severity and type of corruption in turn
+    corruptions = cfg.CORRUPTION.TYPE
+    curr_coreset = 0
+    num_total_batches = cfg.CORRUPTION.NUM_EX // cfg.TEST.BATCH_SIZE + 1
+    domain_order = create_cdc_sequence(num_total_batches=num_total_batches)
+    
+    corruption_res = [0] * len(corruptions)
+    corruption_idx = [0] * len(corruptions)
+    total = 0
+    all_loaders = []
+    
+    for ii, severity in enumerate(cfg.CORRUPTION.SEVERITY):
+        for i_x, corruption_type in enumerate(cfg.CORRUPTION.TYPE):
+            
+            x_test, y_test = load_imagenetc(cfg.CORRUPTION.NUM_EX,
+                                           severity, cfg.DATA_DIR, False,
+                                           [corruption_type])
+            all_loaders.append((x_test, y_test))
+            logger.info(f"[{corruption_type}{severity}] Loaded") 
+            
+        for i_xx, order_i in enumerate(domain_order):
+            x_test, y_test = all_loaders[order_i]
+            x_curr = x_test[corruption_idx[order_i]:corruption_idx[order_i]+cfg.TEST.BATCH_SIZE].cuda()
+            y_curr = y_test[corruption_idx[order_i]:corruption_idx[order_i]+cfg.TEST.BATCH_SIZE].cuda()
+            corruption_idx[order_i] += cfg.TEST.BATCH_SIZE
+            
+            output = model(x_curr)
+            
+            output = output[0] if isinstance(output, tuple) else output
+            correct = (output.max(1)[1] == y_curr).float().sum()
+            corruption_res[order_i] += correct.item()
+            total += len(x_curr)
+            acc_curr = correct.item() / len(x_curr)
+            err_curr = 1. - acc_curr
+            acc_running = sum(corruption_res) / total
+            err_running = 1. - acc_running
+            logger.info(f"[{i_xx}/{len(domain_order)}: {corruptions[order_i]}] current error: {err_curr:.2%}, running error: {err_running:.2%}")
+            
+    All_error = [1.-i/cfg.CORRUPTION.NUM_EX for i in corruption_res]
+    all_error_res = ' '.join([f"{e:.2%}" for e in All_error])
+    logger.info(f"All error: {all_error_res}")
+    logger.info(f"Mean error: {sum(All_error) / len(All_error):.2%}")
+
+def setup_source(model):
+    """Set up the baseline source model without adaptation."""
+    model.eval()
+    logger.info(f"model for evaluation: %s", model)
+    return model
+
+def setup_tent(model):
+    """Set up tent adaptation.
+
+    Configure the model for training + feature modulation by batch statistics,
+    collect the parameters for feature modulation by gradient optimization,
+    set up the optimizer, and then tent the model.
+    """
+    model = tent.configure_model(model)
+    params, param_names = tent.collect_params(model)
+    optimizer = setup_optimizer(params)
+    tent_model = tent.Tent(model, optimizer,
+                           steps=cfg.OPTIM.STEPS,
+                           episodic=cfg.MODEL.EPISODIC)
+    # logger.info(f"model for adaptation: %s", model)
+    # logger.info(f"params for adaptation: %s", param_names)
+    # logger.info(f"optimizer for adaptation: %s", optimizer)
+    return tent_model
+
+
+def setup_optimizer(params):
+    """Set up optimizer for tent adaptation.
+
+    Tent needs an optimizer for test-time entropy minimization.
+    In principle, tent could make use of any gradient optimizer.
+    In practice, we advise choosing Adam or SGD+momentum.
+    For optimization settings, we advise to use the settings from the end of
+    trainig, if known, or start with a low learning rate (like 0.001) if not.
+
+    For best results, try tuning the learning rate and batch size.
+    """
+    if cfg.OPTIM.METHOD == 'Adam':
+        return optim.Adam(params,
+                    lr=cfg.OPTIM.LR,
+                    betas=(cfg.OPTIM.BETA, 0.999),
+                    weight_decay=cfg.OPTIM.WD)
+    elif cfg.OPTIM.METHOD == 'SGD':
+        return optim.SGD(params,
+                   lr=cfg.OPTIM.LR,
+                   momentum=0.9,
+                   dampening=0,
+                   weight_decay=cfg.OPTIM.WD,
+                   nesterov=True)
+    elif cfg.OPTIM.METHOD == 'AdamW':
+        return optim.AdamW(params,
+                    lr=cfg.OPTIM.LR,
+                    betas=(cfg.OPTIM.BETA, 0.999),
+                    weight_decay=cfg.OPTIM.WD)
+    else:
+        raise NotImplementedError
+
+def setup_cotta(model):
+    """Set up tent adaptation.
+
+    Configure the model for training + feature modulation by batch statistics,
+    collect the parameters for feature modulation by gradient optimization,
+    set up the optimizer, and then tent the model.
+    """
+    model = cotta.configure_model(model)
+    params, param_names = cotta.collect_params(model)
+    optimizer = setup_optimizer(params)
+    cotta_model = cotta.CoTTA(model, optimizer,
+                           steps=cfg.OPTIM.STEPS,
+                           episodic=cfg.MODEL.EPISODIC)
+    logger.info(f"model for adaptation: %s", model)
+    logger.info(f"params for adaptation: %s", param_names)
+    logger.info(f"optimizer for adaptation: %s", optimizer)
+    return cotta_model
+
+def setup_vida(args, model):
+    model = vida.configure_model(model, cfg)
+    model_param, vida_param = vida.collect_params(model)
+    optimizer = setup_optimizer_vida(model_param, vida_param, cfg.OPTIM.LR, cfg.OPTIM.ViDALR)
+    vida_model = vida.ViDA(model, optimizer,
+                           steps=cfg.OPTIM.STEPS,
+                           episodic=cfg.MODEL.EPISODIC,
+                           unc_thr = args.unc_thr,
+                           ema = cfg.OPTIM.MT,
+                           ema_vida = cfg.OPTIM.MT_ViDA,
+                           )
+    logger.info(f"model for adaptation: %s", model)
+    logger.info(f"optimizer for adaptation: %s", optimizer)
+    return vida_model
+
+def setup_optimizer_vida(params, params_vida, model_lr, vida_lr):
+    if cfg.OPTIM.METHOD == 'Adam':
+        return optim.Adam([{"params": params, "lr": model_lr},
+                                  {"params": params_vida, "lr": vida_lr}],
+                                 lr=1e-5, betas=(cfg.OPTIM.BETA, 0.999),weight_decay=cfg.OPTIM.WD)
+
+    elif cfg.OPTIM.METHOD == 'SGD':
+        return optim.SGD([{"params": params, "lr": model_lr},
+                                  {"params": params_vida, "lr": vida_lr}],
+                                    momentum=cfg.OPTIM.MOMENTUM,dampening=cfg.OPTIM.DAMPENING,
+                                    nesterov=cfg.OPTIM.NESTEROV,
+                                 lr=1e-5,weight_decay=cfg.OPTIM.WD)
+    else:
+        raise NotImplementedError
+    
+def setup_dpcore(args, model):
+    model = dpcore.configure_model(model, cfg)
+    prompt_params = dpcore.collect_params(model)
+    optimizer = setup_optimizer(prompt_params)
+    dpcore_model = dpcore.DPCore(model, optimizer, 
+                                temp_tau=cfg.OPTIM.TEMP_TAU,
+                                thr_rho=cfg.OPTIM.THR_RHO,
+                                ema_alpha=cfg.OPTIM.EMA_ALPHA,
+                                E_OOD=cfg.OPTIM.STEPS)
+    dpcore_model.obtain_src_stat(data_path=args.data_dir, num_samples=cfg.SRC_NUM_SAMPLES)
+    return dpcore_model
+
+if __name__ == '__main__':
+    evaluate('"Imagenet-C evaluation.')

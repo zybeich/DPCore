@@ -141,7 +141,6 @@ _C.OPTIM.TEMP_TAU = 3.0
 _C.OPTIM.THR_RHO = 0.8
 
 # CDC setting configurations
-_C.CDC_PATH = ''
 _C.SRC_NUM_SAMPLES = 300
 
 # # Config destination (in SAVE_DIR)

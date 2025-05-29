@@ -14,7 +14,9 @@ conda activate dpcore
 
 ```bash
 cd imagenet
-sh ./bash/dpcore.sh
+export DATA_DIR="/path/to/data"
+sh ./bash/dpcore.sh   # CSC
+sh ./bash/dpcore_cdc.sh   # CDC
 ```
 
 

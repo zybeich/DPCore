@@ -1,1 +1,1 @@
-python imagenetc.py --cfg ./cfgs/source.yaml
+python imagenetc.py --cfg ./cfgs/source.yaml  --data_dir $DATA_DIR 
