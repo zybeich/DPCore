@@ -7,7 +7,7 @@
 
 ---
 
-## ⚙️ Settings
+## Settings
 Continual Test-Time Adaptation (CTTA) aims to adapt source pre-trained models to continually changing, unseen target domains. However, existing methods often struggle with dynamic conditions, facing issues like convergence problems, catastrophic forgetting, or misapplying knowledge. 
 
 <p align="center">
@@ -16,7 +16,7 @@ Continual Test-Time Adaptation (CTTA) aims to adapt source pre-trained models to
 
 Illustrated through an autonomous driving scenario where a vehicle encounters varying weather and lighting conditions. The top panel shows the conventional CSC setting with structured, uniform-length domain transitions, while the bottom panel illustrates our proposed CDC setting where domains recur with varying frequencies and durations—better reflecting real-world challenges.  When evaluated on ImageNet-to-ImageNet-C with ViT base model, previous SOTA ViDA's error rate increases significantly from 43.4% to 52.1% when moving from CSC to CDC, while DPCore maintains robust performance (39.9% to 42.1%).
 
-## 🔎 Overview of DPCore
+## Overview of DPCore
 **DPCore** is a novel method designed for robust performance across diverse domain change patterns while ensuring computational efficiency. It integrates three key components:
 1.  **Visual Prompt Adaptation:** For efficient domain alignment with minimal parameters.
 2.  **Prompt Coreset:** For preserving knowledge from previous domains and accommodating new ones.
@@ -33,7 +33,7 @@ Our extensive experiments show that DPCore consistently outperforms various CTTA
 
 ---
 
-## 🔧 Requirements
+## Requirements
 
 To set up the environment, please follow these steps:
 
@@ -65,7 +65,7 @@ sh ./bash/dpcore_cdc.sh
 **Note**: Ensure that `$DATA_DIR` points to the correct location of the ImageNet-C dataset.
 
 ---
-## 📜 Citation
+## Citation
 If you find DPCore useful in your research, please consider citing our paper:
 ```bibtex
 @article{zhang2024dpcore,
@@ -80,7 +80,7 @@ If you find DPCore useful in your research, please consider citing our paper:
 }
 ```
 
-## 🙏 Acknowledgements
+## Acknowledgements
 This work heavily utilized code and concepts from the following excellent projects:
 - [CoTTA](https://github.com/qinenergy/cotta) 
 - [ViDA](https://github.com/Yangsenqiao/vida) 
